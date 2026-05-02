@@ -1,0 +1,565 @@
+{
+  "name": "Remix: Gestion Menus Diarios V_17-4",
+  "description": "Aplicación para el recuento automático de dietas y menús por planta, sustituyendo hojas de cálculo manuales.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
+{
+  "name": "gestion-menus-diarios",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "lucide-react": "^0.562.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
+
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
+
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/57330f59-8444-45bf-b1d0-8b2f9705bdb3
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
+
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  }
+}
+export type Floor = '0' | '1' | '2' | '3';
+
+export type DietType = 
+  | 'Normal' 
+  | 'Normal Disfágia' 
+  | 'Mixto (ND+TX)' 
+  | 'Normal Disfágia Diabético' 
+  | 'Normal Diabético' 
+  | 'Triturado';
+
+export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner';
+
+export interface DailyRecord {
+  date: string; // ISO string YYYY-MM-DD
+  counts: {
+    [floor in Floor]: {
+      [diet in DietType]: {
+        breakfast: number;
+        lunch: number;
+        snack: number;
+        dinner: number;
+      }
+    }
+  };
+  familyCounts: {
+    [floor in Floor]: number;
+  };
+}
+
+export interface Resident {
+  id: string;
+  name: string;
+  surname: string;
+  floor: Floor;
+  mealFloors?: {
+    breakfast: Floor;
+    lunch: Floor;
+    snack: Floor;
+    dinner: Floor;
+  };
+  diet: DietType;
+  lactoseFree?: boolean;
+  notes?: string;
+  isAbsent: boolean; // Ausencia total
+  mealAbsences?: { // Ausencias granulares
+    breakfast: boolean;
+    lunch: boolean;
+    snack: boolean;
+    dinner: boolean;
+  };
+  isDayCenter: boolean;
+  dayCenterSchedule?: {
+    breakfast: boolean;
+    lunch: boolean;
+    snack: boolean;
+    dinner: boolean;
+  };
+}
+
+export const DIET_TYPES: DietType[] = [
+  'Normal',
+  'Normal Disfágia',
+  'Mixto (ND+TX)',
+  'Normal Disfágia Diabético',
+  'Normal Diabético',
+  'Triturado'
+];
+
+export const FLOORS: Floor[] = ['0', '1', '2', '3'];
+
+export const DIET_COLORS: Record<DietType, string> = {
+  'Normal': 'bg-blue-50 border-blue-200 text-blue-900',
+  'Normal Disfágia': 'bg-pink-100 border-pink-200 text-pink-900',
+  'Mixto (ND+TX)': 'bg-purple-100 border-purple-200 text-purple-900',
+  'Normal Disfágia Diabético': 'bg-orange-100 border-orange-200 text-orange-900',
+  'Normal Diabético': 'bg-yellow-100 border-yellow-200 text-yellow-900',
+  'Triturado': 'bg-green-100 border-green-200 text-green-900',
+};
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, '.', '');
+    return {
+      server: {
+        port: 3000,
+        host: '0.0.0.0',
+      },
+      plugins: [react()],
+      define: {
+        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, '.'),
+        }
+      }
+    };
+});
+
+GEMINI_API_KEY=PLACEHOLDER_API_KEY
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+import React, { useState, useEffect, useRef } from 'react';
+import { DailyCountView } from './components/DailyCountView';
+import { ResidentManager } from './components/ResidentManager';
+import { AbsenceManager } from './components/AbsenceManager';
+import { MonthlyBillingView } from './components/MonthlyBillingView';
+import { INITIAL_RESIDENTS } from './constants';
+import { Resident, DailyRecord } from './types';
+import { LayoutDashboard, Users, UserX, FileText, Save, FolderOpen, RefreshCw } from 'lucide-react';
+
+const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'count' | 'residents' | 'absences' | 'billing'>('count');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [residents, setResidents] = useState<Resident[]>(() => {
+    const saved = localStorage.getItem('amanecer_residents');
+    return saved ? JSON.parse(saved) : INITIAL_RESIDENTS;
+  });
+  
+  const [history, setHistory] = useState<DailyRecord[]>(() => {
+    const saved = localStorage.getItem('amanecer_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [familyCounts, setFamilyCounts] = useState<Record<string, number>>({});
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  useEffect(() => {
+    localStorage.setItem('amanecer_residents', JSON.stringify(residents));
+  }, [residents]);
+
+  useEffect(() => {
+    localStorage.setItem('amanecer_history', JSON.stringify(history));
+  }, [history]);
+
+  const handleSaveDay = (record: DailyRecord) => {
+    setHistory(prev => {
+      const filtered = prev.filter(r => r.date !== record.date);
+      return [...filtered, record];
+    });
+    alert(`Día ${record.date} guardado correctamente en el historial.`);
+  };
+
+  // Función para exportar la base de datos a un archivo local con nombre dinámico basado en la fecha seleccionada
+  const exportDatabase = () => {
+    const data = {
+      residents,
+      history,
+      exportDate: new Date().toISOString()
+    };
+
+    // Formatear la fecha seleccionada para el nombre del archivo (DD-MM-YYYY)
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const year = selectedDate.getFullYear();
+    const formattedDate = `${day}-${month}-${year}`;
+    
+    // Nombre de archivo según requerimiento: DD-MM-YYYY_menús_amanecer
+    const filename = `${formattedDate}_menús_amanecer.json`;
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Función para importar la base de datos desde un archivo local
+  const importDatabase = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (json.residents && json.history) {
+          if (confirm('¿Deseas cargar estos datos? Se sustituirá la información actual de este navegador.')) {
+            setResidents(json.residents);
+            setHistory(json.history);
+            alert('Datos sincronizados correctamente.');
+          }
+        } else {
+          alert('El archivo no tiene el formato correcto.');
+        }
+      } catch (err) {
+        alert('Error al leer el archivo.');
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-10 no-print shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center gap-2">
+                <div className="bg-yellow-400 p-1.5 rounded-lg">
+                    <span className="font-bold text-sky-900 text-lg">RA</span>
+                </div>
+                <span className="font-bold text-xl text-gray-800 hidden md:block">Gestión Amanecer</span>
+              </div>
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <button 
+                  onClick={() => setActiveTab('count')} 
+                  className={`${activeTab === 'count' ? 'border-sky-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors`}
+                >
+                  <LayoutDashboard size={18} className="mr-2" /> Conteo Diario
+                </button>
+                <button 
+                  onClick={() => setActiveTab('residents')} 
+                  className={`${activeTab === 'residents' ? 'border-sky-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors`}
+                >
+                  <Users size={18} className="mr-2" /> Residentes
+                </button>
+                <button 
+                  onClick={() => setActiveTab('absences')} 
+                  className={`${activeTab === 'absences' ? 'border-sky-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors`}
+                >
+                  <UserX size={18} className="mr-2" /> Asistencia
+                </button>
+                <button 
+                  onClick={() => setActiveTab('billing')} 
+                  className={`${activeTab === 'billing' ? 'border-sky-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors`}
+                >
+                  <FileText size={18} className="mr-2" /> Facturación
+                </button>
+              </div>
+            </div>
+
+            {/* Botones de Sincronización Local */}
+            <div className="flex items-center gap-2">
+              <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={importDatabase} />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                title="Cargar base de datos desde archivo"
+                className="p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-full transition-all flex items-center gap-1 text-xs font-bold"
+              >
+                <FolderOpen size={20} />
+                <span className="hidden lg:block uppercase tracking-wider">Cargar</span>
+              </button>
+              <button 
+                onClick={exportDatabase}
+                title={`Guardar base de datos (${selectedDate.toLocaleDateString('es-ES')})`}
+                className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-all flex items-center gap-1 text-xs font-bold"
+              >
+                <Save size={20} />
+                <span className="hidden lg:block uppercase tracking-wider">Guardar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'count' && (
+          <DailyCountView 
+            residents={residents} 
+            date={selectedDate}
+            setDate={setSelectedDate}
+            familyCounts={familyCounts}
+            setFamilyCounts={setFamilyCounts}
+            onSaveDay={handleSaveDay}
+          />
+        )}
+        {activeTab === 'residents' && (
+          <ResidentManager 
+            residents={residents} 
+            setResidents={setResidents} 
+          />
+        )}
+        {activeTab === 'absences' && (
+          <AbsenceManager 
+            residents={residents} 
+            setResidents={setResidents}
+            date={selectedDate}
+          />
+        )}
+        {activeTab === 'billing' && (
+          <MonthlyBillingView 
+            history={history} 
+          />
+        )}
+      </main>
+      
+      <footer className="bg-white border-t border-gray-200 py-6 no-print">
+         <div className="flex flex-col items-center gap-2">
+            <div className="text-center text-sm text-gray-500">
+               &copy; {new Date().getFullYear()} - Residencia Amanecer
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+               <RefreshCw size={10} className="animate-spin-slow" />
+               <span>Almacenamiento local activo. Guarde el archivo para usar en otros navegadores.</span>
+            </div>
+         </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
+
+import { Resident } from './types';
+
+export const INITIAL_RESIDENTS: Resident[] = [
+  // PLANTA 0
+  { id: 'p0-1', name: 'Ana', surname: 'Fernández', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-2', name: 'Ana', surname: 'González', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-3', name: 'Ana', surname: 'Montes', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-4', name: 'Antonio', surname: 'Gómez', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-5', name: 'Carme', surname: 'Bondía', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-6', name: 'Francisca', surname: 'Roma', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-7', name: 'Jesús', surname: 'Fernández', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-8', name: 'Joan', surname: 'Enrich', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-9', name: 'Loles', surname: 'Palenciano', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-10', name: 'Loli', surname: 'Jordano', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-11', name: 'Loli', surname: 'Rodríguez', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-12', name: 'Mª Carmen', surname: 'Jiménez', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-13', name: 'María', surname: 'Roig', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-14', name: 'María', surname: 'Taltavull', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-15', name: 'Miquel', surname: 'Galofré', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-16', name: 'Rosa', surname: 'Moros', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-17', name: 'Rosario', surname: 'Fernández', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-18', name: 'Serafina', surname: 'Ros', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-19', name: 'Teresa', surname: 'Crespo', floor: '0', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p0-20', name: 'Encarna', surname: 'Serrano', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-21', name: 'Encarnación', surname: 'Prieto', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-22', name: 'Inocencia', surname: 'Navarro', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-23', name: 'Josefina', surname: 'Rodríguez', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-24', name: 'Juanjo', surname: 'Díaz', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-25', name: 'Mariana', surname: 'Gutiérrez', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-26', name: 'Pau', surname: 'Montagut', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-27', name: 'Rosa María', surname: 'Martinez', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-28', name: 'Teresa', surname: 'Manzano', floor: '0', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p0-29', name: 'Ana', surname: 'Perez', floor: '0', diet: 'Normal Diabético', isAbsent: false, isDayCenter: false },
+  { id: 'p0-30', name: 'Roser', surname: 'Camps', floor: '0', diet: 'Normal Diabético', isAbsent: false, isDayCenter: false },
+  { id: 'p0-31', name: 'Antonio', surname: 'Berral', floor: '0', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p0-32', name: 'Dolores', surname: 'Molero', floor: '0', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p0-33', name: 'Magín', surname: 'Solé', floor: '0', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+
+  // PLANTA 3
+  { id: 'p3-1', name: 'Concepción', surname: 'Millán', floor: '3', diet: 'Normal', isAbsent: false, isDayCenter: false },
+  { id: 'p3-2', name: 'Ana', surname: 'García', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-3', name: 'Clementina', surname: 'Utrera', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-4', name: 'Consuelo', surname: 'Álvarez', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-5', name: 'Emilia', surname: 'Delgado', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-6', name: 'Jesús', surname: 'Alonso', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-7', name: 'José', surname: 'Aguilar', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-8', name: 'Juliana', surname: 'Laguna', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-9', name: 'María Jesús', surname: 'Martínez', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-10', name: 'Mariana', surname: 'Morato', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-11', name: 'Pedro', surname: 'Sáez', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-12', name: 'Petra', surname: 'Gallego', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-13', name: 'Juan', surname: 'Zamora', floor: '3', diet: 'Normal Disfágia', isAbsent: false, isDayCenter: false },
+  { id: 'p3-14', name: 'Albert', surname: 'Terrats', floor: '3', diet: 'Normal Disfágia Diabético', isAbsent: false, isDayCenter: false },
+  { id: 'p3-15', name: 'Nuria', surname: 'Marsal', floor: '3', diet: 'Mixto (ND+TX)', isAbsent: false, isDayCenter: false },
+  { id: 'p3-16', name: 'Roser', surname: 'Callas', floor: '3', diet: 'Mixto (ND+TX)', isAbsent: false, isDayCenter: false },
+  { id: 'p3-17', name: 'Carmen', surname: 'Páez', floor: '3', diet: 'Mixto (ND+TX)', isAbsent: false, isDayCenter: false },
+  { id: 'p3-18', name: 'Dolors', surname: 'Viñals', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-19', name: 'Elena', surname: 'Gómez', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-20', name: 'Encarna', surname: 'Mármol', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-21', name: 'Gloria', surname: 'Giménez', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-22', name: 'Jesús', surname: 'Gaona', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-23', name: 'Leonor', surname: 'Almirol', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-24', name: 'Mª Ángeles', surname: 'Rubio', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-25', name: 'María', surname: 'Marchal', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false },
+  { id: 'p3-26', name: 'Santos', surname: 'Montero', floor: '3', diet: 'Triturado', isAbsent: false, isDayCenter: false }
+];
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Residencia Amanecer - Menús</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+      @media print {
+        .no-print { display: none !important; }
+        .print-break-inside-avoid { break-inside: avoid; }
+        
+        body, #root, main { 
+          display: block !important; 
+          height: auto !important; 
+          overflow: visible !important; 
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+        }
+        
+        table { 
+          width: 100% !important; 
+          table-layout: fixed;
+          border-collapse: collapse !important;
+        }
+        
+        th, td {
+          padding: 4px !important;
+          font-size: 12pt !important;
+        }
+        
+        .pdf-compact th, .pdf-compact td {
+          padding: 2px 4px !important;
+        }
+
+        h1 { font-size: 18pt !important; }
+        h2 { font-size: 14pt !important; }
+      }
+      
+      /* Helper class for html2pdf specifically */
+      .html2pdf__page-break {
+        display: block;
+        page-break-before: always;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-50 text-slate-800">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
