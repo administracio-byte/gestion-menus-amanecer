@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Residencia Amanecer - Menús</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+      @media print {
+        .no-print { display: none !important; }
+        .print-break-inside-avoid { break-inside: avoid; }
+        
+        body, #root, main { 
+          display: block !important; 
+          height: auto !important; 
+          overflow: visible !important; 
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+        }
+        
+        table { 
+          width: 100% !important; 
+          table-layout: fixed;
+          border-collapse: collapse !important;
+        }
+        
+        th, td {
+          padding: 4px !important;
+          font-size: 12pt !important;
+        }
+        
+        .pdf-compact th, .pdf-compact td {
+          padding: 2px 4px !important;
+        }
+
+        h1 { font-size: 18pt !important; }
+        h2 { font-size: 14pt !important; }
+      }
+      
+      /* Helper class for html2pdf specifically */
+      .html2pdf__page-break {
+        display: block;
+        page-break-before: always;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-50 text-slate-800">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
